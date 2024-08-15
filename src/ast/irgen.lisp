@@ -98,10 +98,15 @@
 (defmethod emit-ircode ((node binary-node) (ifunc ir:ifunc))
   (let ((left (emit-ircode (left node) ifunc))
         (right (emit-ircode (right node) ifunc)))
-    (if (eq (kind node) :assign)
-        (let ((lvalue-addr (ir-addr (decl-ref (left node)))))
-          (ir:emit-mem-store ifunc right lvalue-addr)
-          ;; assignments evaluate to the value assigned. This is needed when assignments are used as
-          ;; expressions instead as statements.
-          right)
-        (ir:emit-binary ifunc (kind node) left right))))
+    (case (kind node)
+      (:assign
+       (let ((lvalue-addr (ir-addr (decl-ref (left node)))))
+         (ir:emit-mem-store ifunc right lvalue-addr)
+         ;; assignments evaluate to the value assigned. This is needed when assignments are used as
+         ;; expressions instead as statements.
+         right))
+      ((:add :sub :mul :div)
+       (ir:emit-binary ifunc (kind node) left right))
+      ((:equal :not-equal :less :less-equal :greater :greater-equal)
+       (ir:emit-compare ifunc (kind node) left right))
+      (otherwise (error "not a valid binary operator")))))
