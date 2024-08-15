@@ -123,6 +123,21 @@ avoid collisions. "
   (with-slots (statements) ifunc
     (vector-push-extend (make-instance 'jump-zero :target target :jump-cond jump-cond) statements)))
 
+(defun emit-compare (ifunc opcode arg1 arg2)
+  "Emit a new compare statement."
+  (check-type ifunc ifunc)
+  (check-type opcode compare-opcode)
+  (check-type arg1 value)
+  (check-type arg2 value)
+  (with-slots (statements) ifunc
+    (let ((result (new-temp-var ifunc (value-type arg1))))
+      (vector-push-extend (make-instance 'compare :opcode opcode
+                                                  :arg1 arg1
+                                                  :arg2 arg2
+                                                  :result result)
+                          statements)
+      result)))
+
 (defun emit-unary (ifunc opcode arg1)
   "Emit a new mem-load statement."
   (check-type ifunc ifunc)
