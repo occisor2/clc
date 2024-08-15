@@ -90,7 +90,7 @@
 
 ;;;; Operand types
 
-(deftype operand-size () '(member :32 :64))
+(deftype operand-size () '(member :8 :32 :64))
 
 (declaim (optimize safety))
 (defclass operand ()

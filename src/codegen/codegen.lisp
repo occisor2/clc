@@ -73,7 +73,6 @@
   (with-slots (instructions) asm-func
     (vector-push-extend (make-instance 'mov :source source :dest dest) instructions)))
 
-(defun make-temp (asm-func size)
 (defun emit-cmp (asm-func arg1 arg2)
   "Helper function for emitting cmp instructions since they are used so frequently."
   (check-type asm-func asm-func)
@@ -87,6 +86,8 @@
           (emit-mov asm-func arg2 temp)
           (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 temp) instructions))
         (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 arg2) instructions))))
+
+(defun make-temp-name (asm-func size)
   "Generate a new unique temporary of size SIZE."
   (check-type asm-func asm-func)
   (check-type size operand-size)
@@ -193,7 +194,7 @@
           (result (value-to-operand (ir:result statement))))
       (case opcode
         (:div
-         (let ((temp (make-temp asm-func :32)))
+         (let ((temp (make-temp-name asm-func :32)))
            (emit-mov asm-func arg2 temp)
            (emit-mov asm-func arg1 (make-register :rax :32))
            (vector-push-extend (make-instance 'cdq) instructions)
