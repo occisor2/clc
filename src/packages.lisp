@@ -36,6 +36,7 @@
     #:emit-mem-store
     #:emit-jump
     #:emit-jump-zero
+    #:emit-compare
     #:emit-unary
     #:emit-binary
     #:iprogram
@@ -68,6 +69,7 @@
     #:target
     #:jump-zero
     #:jump-cond
+    #:compare
     #:unary
     #:opcode
     #:arg1
