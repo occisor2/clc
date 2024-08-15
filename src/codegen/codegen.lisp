@@ -74,6 +74,19 @@
     (vector-push-extend (make-instance 'mov :source source :dest dest) instructions)))
 
 (defun make-temp (asm-func size)
+(defun emit-cmp (asm-func arg1 arg2)
+  "Helper function for emitting cmp instructions since they are used so frequently."
+  (check-type asm-func asm-func)
+  (check-type arg1 operand)
+  (check-type arg2 operand)
+  (with-slots (instructions) asm-func
+    ;; Test if the second operand if a constant and assign it a temporary if so. Cmp can't have a
+    ;; constant as it second operand.
+    (if (typep arg2 'immediate)
+        (let ((temp (make-temp-name asm-func (size arg2))))
+          (emit-mov asm-func arg2 temp)
+          (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 temp) instructions))
+        (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 arg2) instructions))))
   "Generate a new unique temporary of size SIZE."
   (check-type asm-func asm-func)
   (check-type size operand-size)
@@ -144,11 +157,8 @@
 (defmethod translate-ir ((statement ir:jump-zero) (asm-func asm-func))
   (with-slots (instructions) asm-func
     ;; cmp can't have a constant as its 2nd arg, so always make sure it's in a register
-    (let* ((cond-value (value-to-operand (ir:jump-cond statement)))
-           (temp (make-temp asm-func (size cond-value)))
-           (zero-imm (make-instance 'immediate :value 0)))
-      (emit-mov asm-func cond-value temp)
-      (vector-push-extend (make-instance 'cmp :arg1 zero-imm :arg2 temp) instructions))
+    (let* ((cond-value (value-to-operand (ir:jump-cond statement))))
+      (emit-cmp asm-func (make-immediate 0) cond-value))
     (vector-push-extend (make-instance 'jmpcc :target (ir:target statement)
                                               :jump-cond :zero)
                         instructions)))
