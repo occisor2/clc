@@ -10,20 +10,18 @@
 
 ** Current Features
 
-- Variables
-  No intialization at all; no global variables; can be defined
-  anywhere in the function
-- Types
-  Only int supported right now
-- Functions
-  No multiple or separate definitions from implementation; only 6 or
-  less arguments in calls; only int return type, no void; since no
-  declaring functions, you can't link against other libraries yet
-- Operators
-  Currently supported: +, -, *
-- Control Flow
-  If statements with optional else; if and else must have a compound
-  statement following them
+- Variables: No intialization at all; no global variables; can be
+  defined anywhere in the function
+- Types: Only int supported right now
+- Functions: No multiple or separate definitions from implementation;
+  only 6 or less arguments in calls; only int return type, no void;
+  since no declaring functions, you can't link against other libraries
+  yet
+- Operators: Currently supported: +, -, *
+- Control Flow: If statements with optional else; if and else must
+  have a compound statement following them
+- Error Handling: Syntax and other errors generate Common Lisp
+  conditions as of now, so are not very user friendly
   
 The entire compilation pipeline is implemented, so all these features
 compile to assembly code. The compiler is really just a fancy
@@ -48,9 +46,22 @@ using.
 ** Future Goals
 
 - Implement a much larger subset of the language
+- Improve the diagnostic messages
 - Add optimization passes after the IR generation stage, specifically
   constant propogation, mem2reg, and dead code elimination.
 - Implement my own crt0 and small LibC
+
+** Resources
+
+For the frontend, I learned most of what I know about and lexing and
+parsing, specifically Pratt Parsing, from Robert Nystrom's /Crafting
+Interpreters/. My AST and symbol handling design is some of my own,
+probaly not very original, and based on other various sources. My IR
+is very inspired by LLVM without the SSA format, and a large portion
+of my assembly code generator is based on the methods described in
+Nora Sandler's /Writing a C Compiler/. I learned most of the weird
+language semantics related to C from Nora's book too.
+
 
 * Automatic Installation
 
