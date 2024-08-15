@@ -1,0 +1,64 @@
+#+TITLE:     CLC Compiler
+#+AUTHOR:    Russell Smith
+#+EMAIL:     russell.smith7502@gmail.com
+#+DESCRIPTION: A small C compiler written in Common Lisp 
+#+KEYWORDS:  C, Compiler, Lisp
+#+LANGUAGE:  en
+#+OPTIONS:   H:4 num:nil toc:2 p:t
+
+* Summary
+
+** Current Features
+
+- Variables
+  No intialization at all; no global variables; can be defined
+  anywhere in the function
+- Types
+  Only int supported right now
+- Functions
+  No multiple or separate definitions from implementation; only 6 or
+  less arguments in calls; only int return type, no void; since no
+  declaring functions, you can't link against other libraries yet
+- Operators
+  Currently supported: +, -, *
+- Control Flow
+  If statements with optional else; if and else must have a compound
+  statement following them
+  
+The entire compilation pipeline is implemented, so all these features
+compile to assembly code. The compiler is really just a fancy
+calculator with basic control flow right now. You can get program
+output by returning values from main. No runtime has been implemented
+yet, so you need to link against gcc or clang's.
+
+* About
+
+I've been trying to write a C compiler for about a year, but either
+got busy or stuck with a design issue. I've finally got something
+working though small with this project and have big goals for the
+future.
+
+** Why Lisp?
+
+I've always found Lisp really interesting, especially Common Lisp. The
+REPL oriented development style of Lisp also made trying new things
+during development a lot easier compared to C++, which is what I was
+using.
+
+** Future Goals
+
+- Implement a much larger subset of the language
+- Add optimization passes after the IR generation stage, specifically
+  constant propogation, mem2reg, and dead code elimination.
+- Implement my own crt0 and small LibC
+
+* Automatic Installation
+
+Clone the repository into ~/quicklisp/local-projects then load and
+install dependencies via quicklisp.
+
+#+BEGIN_SRC lisp
+  (ql:quickload 'clc)
+#+END_SRC
+
+
