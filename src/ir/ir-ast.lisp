@@ -7,7 +7,7 @@
     :i32)
   "Valid IR value types for reference.")
 
-(defparameter *opcodes*
+(defparameter *instructions*
   '(:label
     :call
     :ret
@@ -18,10 +18,19 @@
     :jump-zero
     ;; unary
     :neg
+    :not
     ;; binary
     :add
     :sub
-    :mul)
+    :mul
+    :div
+    ;; compare
+    :equal
+    :not-equal
+    :less
+    :less-equal
+    :greater
+    :greater-equal)
   "List of instructions for reference.")
 
 (declaim (optimize safety))
@@ -190,6 +199,30 @@
     :initarg :jump-cond
     :accessor jump-cond
     :type value)))
+
+;; having a separate compare instruction makes instruction selection a lot easier during code
+;; generation
+(deftype compare-opcode ()
+  '(member :equal :not-equal :less :less-equal :greater :greater-equal))
+
+(declaim (optimize safety))
+(defclass compare (statement)
+  ((opcode
+    :initarg :opcode
+    :accessor opcode
+    :type compare-opcode)
+   (arg1
+    :initarg :arg1
+    :accessor arg1
+    :type value)
+   (arg2
+    :initarg :arg2
+    :accessor arg2
+    :type value)
+   (result
+    :initarg :result
+    :accessor result
+    :type var)))
 
 (deftype unary-opcode ()
   '(member :neg :not))

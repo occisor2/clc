@@ -65,6 +65,10 @@
   (with-slots (target jump-cond) obj
     (format out "jump-zero ~a, ~a" target jump-cond)))
 
+(defmethod print-object ((obj compare) out)
+  (with-slots (opcode arg1 arg2 result) obj
+    (format out "~a = cmp ~(~a~) ~a, ~a" result opcode arg1 arg2)))
+
 (defmethod print-object ((obj unary) out)
   (with-slots (opcode arg1 result) obj
     (format out "~a = ~(~a~) ~a" result opcode arg1)))
