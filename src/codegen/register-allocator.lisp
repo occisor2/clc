@@ -136,6 +136,10 @@
          (when (typep (arg2 instruction) 'temp)
            (setf temps (adjoin (arg2 instruction) temps :test #'operand-equal-p))
            (inc-temp-use temp-map (arg2 instruction))))
+        (idiv
+         (when (typep (arg1 instruction) 'temp)
+           (setf temps (adjoin (arg1 instruction) temps :test #'operand-equal-p))
+           (inc-temp-use temp-map (arg1 instruction))))
         (unary
          (when (typep (arg1 instruction) 'temp)
            (setf temps (adjoin (arg1 instruction) temps :test #'operand-equal-p))
@@ -190,6 +194,13 @@
                  (list (dest instruction)))) ; updated
     (cmp (values (list (arg1 instruction) (arg2 instruction))
                  nil))
+    (cdq (values (list (make-register :rax :32))
+                 (list (make-register :rdx :32))))
+    (idiv (values (list (arg1 instruction)
+                        (make-register :rax :32)
+                        (make-register :rdx :32))
+                  (list (make-register :rax :32)
+                        (make-register :rdx :32))))
     (unary (values (list (arg1 instruction))
                    (list (arg1 instruction))))
     (binary (values (list (arg1 instruction) (arg2 instruction))
@@ -388,6 +399,8 @@
       (cmp
        (handle-operand-register-replace reg-map instruction 'arg1)
        (handle-operand-register-replace reg-map instruction 'arg2))
+      (idiv
+       (handle-operand-register-replace reg-map instruction 'arg1))
       (unary
        (handle-operand-register-replace reg-map instruction 'arg1))
       (binary
@@ -440,6 +453,8 @@
         (cmp
          (handle-operand-spill asm-func spill-map instruction 'arg1)
          (handle-operand-spill asm-func spill-map instruction 'arg2))
+        (idiv
+         (handle-operand-spill asm-func spill-map instruction 'arg1))
         (unary
          (handle-operand-spill asm-func spill-map instruction 'arg1))
         (binary

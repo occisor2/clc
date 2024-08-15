@@ -86,6 +86,13 @@
               (:zero "jz"))
             target)))
 
+(defmethod print-object ((obj cdq) out)
+  (format out "cdq"))
+
+(defmethod print-object ((obj idiv) out)
+  (with-slots (arg1) obj
+    (format out "idiv ~a" arg1)))
+
 (defmethod print-object ((obj unary) out)
   (with-slots (opcode arg1) obj
     (format out "~(~a~) ~a" opcode arg1)))

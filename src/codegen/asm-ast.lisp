@@ -29,6 +29,9 @@
     :cmp
     :jmp
     :jmpcc
+    :cdq
+    :idiv
+    :neg
     :add
     :sub
     :imul)
@@ -231,6 +234,16 @@
     :initarg :jump-cond
     :accessor jump-cond
     :type jump-cond)))
+
+(declaim (optimize safety))
+(defclass cdq (instruction) ())
+
+(declaim (optimize safety))
+(defclass idiv (instruction)
+  ((arg1
+    :initarg :arg1
+    :accessor arg1
+    :type operand)))
 
 (deftype unary-opcode () '(member :neg))
 
