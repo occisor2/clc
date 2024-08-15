@@ -93,7 +93,11 @@
 
 (defmethod emit-ircode ((node unary-node) (ifunc ir:ifunc))
   (let ((left (emit-ircode (left node) ifunc)))
-    (ir:emit-unary ifunc (kind node) left)))
+    (ir:emit-unary ifunc (case (kind node)
+                           (:neg :neg)
+                           (:logic-not :not)
+                           (otherwise (error "not a valid unary operator")))
+                   left)))
 
 (defmethod emit-ircode ((node binary-node) (ifunc ir:ifunc))
   (let ((left (emit-ircode (left node) ifunc))
