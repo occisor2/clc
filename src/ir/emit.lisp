@@ -66,7 +66,7 @@ avoid collisions. "
     (vector-push-extend (make-instance 'label :name name) statements)))
 
 (defun emit-call (ifunc name return-type args)
-  "Emit a new ret statement with an optional return-value."
+  "Emit a new call statement."
   (check-type ifunc ifunc)
   (check-type name string)
   (check-type args array)
@@ -116,7 +116,7 @@ avoid collisions. "
     (vector-push-extend (make-instance 'jump :target target) statements)))
 
 (defun emit-jump-zero (ifunc target jump-cond)
-  "Emit a new jump instruction."
+  "Emit a new jump-zero statement."
   (check-type ifunc ifunc)
   (check-type target string)
   (check-type jump-cond value)
@@ -139,7 +139,7 @@ avoid collisions. "
       result)))
 
 (defun emit-unary (ifunc opcode arg1)
-  "Emit a new mem-load statement."
+  "Emit a new unary statement."
   (check-type ifunc ifunc)
   (check-type opcode unary-opcode)
   (check-type arg1 value)
@@ -152,7 +152,7 @@ avoid collisions. "
       result)))
 
 (defun emit-binary (ifunc opcode arg1 arg2)
-  "Emit a new mem-load statement."
+  "Emit a new binary statement."
   (check-type ifunc ifunc)
   (check-type opcode binary-opcode)
   (check-type arg1 value)
