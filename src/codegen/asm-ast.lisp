@@ -7,7 +7,10 @@
     '(:rbp :rsp :rax :rbx :rcx :rdx :rdi :rsi :r8 :r9 :r10 :r11 :r12 :r13 :r14 :r15)))
 
 (defparameter +register-names-32bit+
-    '(:ebp :esp :eax :ebx :ecx :edx :edi :esi :r8d :r9d :r10d :r11d :r12d :r13d :r14d :r15d))
+  '(:ebp :esp :eax :ebx :ecx :edx :edi :esi :r8d :r9d :r10d :r11d :r12d :r13d :r14d :r15d))
+
+(defparameter +register-names-8bit+
+  '(:bpl :spl :al :bl :cl :dl :dil :sil :r8d :r9b :r10b :r11b :r12b :r13b :r14b :r15b))
 
 (defparameter +argument-registers+
   '(:rdi :rsi :rdx :rcx :r8 :r9))
@@ -29,6 +32,7 @@
     :cmp
     :jmp
     :jmpcc
+    :setcc
     :cdq
     :idiv
     :neg
@@ -116,6 +120,11 @@
     :initarg :name
     :accessor name
     :type string)))
+
+(defun make-temp (name size)
+  (check-type name string)
+  (check-type size operand-size)
+  (make-instance 'temp :name name :size size))
 
 (deftype register-type () `(member ,@+register-names+))
 
@@ -235,6 +244,20 @@
     :accessor jump-cond
     :type jump-cond)))
 
+(deftype set-cond ()
+  '(member :equal :not-equal :less :less-equal :greater :greater-equal))
+
+(declaim (optimize safety))
+(defclass setcc (instruction)
+  ((set-cond
+    :initarg :set-cond
+    :accessor set-cond
+    :type set-cond)
+   (arg1
+    :initarg :arg1
+    :accessor arg1
+    :type operand)))
+
 (declaim (optimize safety))
 (defclass cdq (instruction) ())
 
@@ -258,7 +281,7 @@
     :accessor arg1
     :type operand)))
 
-(deftype unary-opcode () '(member :add :sub :imul))
+(deftype binary-opcode () '(member :add :sub :imul))
 
 (declaim (optimize safety))
 (defclass binary (instruction)

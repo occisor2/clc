@@ -174,10 +174,19 @@
     (let ((opcode (ir:opcode statement))
           (arg1 (value-to-operand (ir:arg1 statement)))
           (result (value-to-operand (ir:result statement))))
-      (emit-mov asm-func arg1 result)
-      (vector-push-extend (make-instance 'unary :opcode (ir-unary-op-to-asm opcode)
-                                                :arg1 result)
-                          instructions))))
+      (case opcode
+        (:not
+         (emit-cmp asm-func (make-immediate 0) arg1)
+         (emit-mov asm-func (make-immediate 0) result)
+         (vector-push-extend (make-instance 'setcc :set-cond :equal
+                                                   ;; convert result register to 8 bit
+                                                   :arg1 (make-temp (name result) :8))
+                             instructions))
+        (otherwise
+         (emit-mov asm-func arg1 result)
+         (vector-push-extend (make-instance 'unary :opcode (ir-unary-op-to-asm opcode)
+                                                   :arg1 result)
+                             instructions))))))
 
 (defun ir-binary-op-to-asm (opcode)
   (check-type opcode keyword)

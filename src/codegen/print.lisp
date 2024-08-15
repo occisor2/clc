@@ -32,11 +32,16 @@
   "Translate a register's 64 name to its 32 bit name."
   (elt +register-names-32bit+ (position name +register-names+)))
 
+(defun get-register-8bit-name (name)
+  "Translate a register's 64 name to its 32 bit name."
+  (elt +register-names-8bit+ (position name +register-names+)))
+
 (defmethod print-object ((obj register) out)
   (with-slots (name size) obj
     (format out "~(~a~)" (case size
                            (:64 name)
-                           (:32 (get-register-32bit-name name))))))
+                           (:32 (get-register-32bit-name name))
+                           (:8 (get-register-8bit-name name))))))
 
 (defmethod print-object ((obj stack) out)
   (with-slots (offset) obj
@@ -85,6 +90,18 @@
             (case jump-cond
               (:zero "jz"))
             target)))
+
+(defmethod print-object ((obj setcc) out)
+  (with-slots (arg1 set-cond) obj
+    (format out "set~a ~a"
+            (case set-cond
+              (:equal "e")
+              (:not-equal "ne")
+              (:less "l")
+              (:less-equal "le")
+              (:greater "g")
+              (:greater-less "ge"))
+            arg1)))
 
 (defmethod print-object ((obj cdq) out)
   (format out "cdq"))
