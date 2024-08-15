@@ -126,7 +126,7 @@ avoid collisions. "
 (defun emit-unary (ifunc opcode arg1)
   "Emit a new mem-load statement."
   (check-type ifunc ifunc)
-  (check-type opcode keyword)
+  (check-type opcode unary-opcode)
   (check-type arg1 value)
   (with-slots (statements) ifunc
     (let ((result (new-temp-var ifunc (value-type arg1))))
@@ -139,7 +139,7 @@ avoid collisions. "
 (defun emit-binary (ifunc opcode arg1 arg2)
   "Emit a new mem-load statement."
   (check-type ifunc ifunc)
-  (check-type opcode keyword)
+  (check-type opcode binary-opcode)
   (check-type arg1 value)
   (check-type arg2 value)
   (with-slots (statements) ifunc

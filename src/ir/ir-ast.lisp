@@ -191,12 +191,15 @@
     :accessor jump-cond
     :type value)))
 
+(deftype unary-opcode ()
+  '(member :neg :not))
+
 (declaim (optimize safety))
 (defclass unary (statement)
   ((opcode
     :initarg :opcode
     :accessor opcode
-    :type keyword)
+    :type unary-opcode)
    (arg1
     :initarg :arg1
     :accessor arg1
@@ -206,12 +209,15 @@
     :accessor result
     :type var)))
 
+(deftype binary-opcode ()
+  '(member :add :sub :mul :div))
+
 (declaim (optimize safety))
 (defclass binary (statement)
   ((opcode
     :initarg :opcode
     :accessor opcode
-    :type keyword)
+    :type binary-opcode)
    (arg1
     :initarg :arg1
     :accessor arg1
