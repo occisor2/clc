@@ -160,8 +160,8 @@ avoid collisions. "
   (with-slots (statements) ifunc
     (let ((result (new-temp-var ifunc (value-type arg1))))
       (vector-push-extend (make-instance 'binary :opcode opcode
-                                                :arg1 arg1
-                                                :arg2 arg2
-                                                :result result)
+                                                 :arg1 arg1
+                                                 :arg2 arg2
+                                                 :result result)
                           statements)
       result)))
