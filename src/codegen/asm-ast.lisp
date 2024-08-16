@@ -154,12 +154,19 @@
 
 ;;;; Instruction types
 
+(deftype operand-size () '(member :8 :32 :64))
+
 (defclass instruction ()
-  ((lives
+  ((operand-size
+    :initarg :operand-size
+    :accessor operand-size
+    :type operand-size)
+   (lives
     :initform nil
     :accessor lives
     :type list
-    :documentation "List of live registers at this instruction.")))
+    :documentation "List of live registers at this instruction."))
+  (:default-initargs :operand-size :32))
 
 (declaim (optimize safety))
 (defclass label (instruction)
@@ -168,17 +175,27 @@
     :accessor name
     :type string)))
 
+(defun make-label (name)
+  (make-instance 'label :name name))
+
 (declaim (optimize safety))
 (defclass call (instruction)
   ((name
     :initarg :name
     :accessor name
     :type string)
+   (prototype
+    :initarg :prototype
+    :accessor prototype
+    :type (array operand-size))
    (arg-count
     :initarg :arg-count
     :accessor arg-count
     :type integer
     :documentation "Only needed for the register allocation pass.")))
+
+(defun make-call (name prototype)
+  (make-instance 'call :name name :prototype prototype))
 
 (declaim (optimize safety))
 (defclass push-stack (instruction)
@@ -187,6 +204,9 @@
     :accessor arg1
     :type operand)))
 
+(defun make-push-stack (arg1)
+  (make-instance 'push-stack :arg1 arg1 :operand-size :64))
+
 (declaim (optimize safety))
 (defclass pop-stack (instruction)
   ((arg1
@@ -194,11 +214,20 @@
     :accessor arg1
     :type operand)))
 
+(defun make-pop-stack (arg1)
+  (make-instance 'pop-stack :arg1 arg1 :operand-size :64))
+
 (declaim (optimize safety))
 (defclass leave (instruction) ())
 
+(defun make-leave ()
+  (make-instance 'leave))
+
 (declaim (optimize safety))
 (defclass ret (instruction) ())
+
+(defun make-ret ()
+  (make-instance 'ret))
 
 (declaim (optimize safety))
 (defclass mov (instruction)
@@ -211,6 +240,9 @@
     :accessor dest
     :type operand)))
 
+(defun make-mov (source dest operand-size)
+  (make-instance 'mov :source source :dest dest :operand-size operand-size))
+
 (declaim (optimize safety))
 (defclass cmp (instruction)
   ((arg1
@@ -222,6 +254,10 @@
     :accessor arg2
     :type operand)))
 
+(defun make-cmp (arg1 arg2 operand-size)
+  (check-type arg2 (not immediate))
+  (make-instance 'cmp :arg1 arg1 :arg2 arg2 :operand-size operand-size))
+
 (declaim (optimize safety))
 (defclass jmp (instruction)
   ((target
@@ -229,6 +265,9 @@
     :accessor target
     :type string
     :documentation "Name of the label this jump is targeting.")))
+
+(defun make-jmp (target)
+  (make-instance 'jmp :target target))
 
 (deftype jump-cond () '(member :zero))
 
@@ -244,22 +283,31 @@
     :accessor jump-cond
     :type jump-cond)))
 
+(defun make-jmpcc (target jump-cond)
+  (make-instance 'jmpcc :target target :jump-cond jump-cond))
+
 (deftype set-cond ()
   '(member :equal :not-equal :less :less-equal :greater :greater-equal))
 
 (declaim (optimize safety))
 (defclass setcc (instruction)
-  ((set-cond
-    :initarg :set-cond
-    :accessor set-cond
-    :type set-cond)
-   (arg1
+  ((arg1
     :initarg :arg1
     :accessor arg1
-    :type operand)))
+    :type operand)
+   (set-cond
+    :initarg :set-cond
+    :accessor set-cond
+    :type set-cond)))
+
+(defun make-setcc (arg1 set-cond)
+  (make-instance 'setcc :arg1 arg1 :set-cond set-cond :operand-size :8))
 
 (declaim (optimize safety))
 (defclass cdq (instruction) ())
+
+(defun make-cdq ()
+  (make-instance 'cdq))
 
 (declaim (optimize safety))
 (defclass idiv (instruction)
@@ -267,6 +315,9 @@
     :initarg :arg1
     :accessor arg1
     :type operand)))
+
+(defun make-idiv (arg1 operand-size)
+  (make-instance 'idiv :arg1 arg1 :operand-size operand-size))
 
 (deftype unary-opcode () '(member :neg))
 
@@ -280,6 +331,9 @@
     :initarg :arg1
     :accessor arg1
     :type operand)))
+
+(defun make-unary (arg1 operand-size)
+  (make-instance 'unary :arg1 arg1 :operand-size operand-size))
 
 (deftype binary-opcode () '(member :add :sub :imul))
 
@@ -297,3 +351,6 @@
     :initarg :arg2
     :accessor arg2
     :type operand)))
+
+(defun make-binary (arg1 arg2 operand-size)
+  (make-instance 'binary :arg1 arg1 :arg2 arg2 :operand-size operand-size))
