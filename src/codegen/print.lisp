@@ -20,14 +20,6 @@
                          (format out "~c~a~%" #\tab instruction)))
          instructions)))
 
-(defmethod print-object ((obj immediate) out)
-  (with-slots (value) obj
-    (format out "~d" value)))
-
-(defmethod print-object ((obj temp) out)
-  (with-slots (name size) obj
-    (format out "~a ~(~a~)" name size)))
-
 (defun get-register-32bit-name (name)
   "Translate a register's 64 name to its 32 bit name."
   (elt +register-names-32bit+ (position name +register-names+)))
@@ -36,19 +28,22 @@
   "Translate a register's 64 name to its 32 bit name."
   (elt +register-names-8bit+ (position name +register-names+)))
 
-(defmethod print-object ((obj register) out)
-  (with-slots (name size) obj
-    (format out "~(~a~)" (case size
-                           (:64 name)
-                           (:32 (get-register-32bit-name name))
-                           (:8 (get-register-8bit-name name))))))
-
-(defmethod print-object ((obj stack) out)
-  (with-slots (offset) obj
-    (format out "DWORD PTR [rsp")
-    (unless (zerop offset)
-      (format out "-~d" offset))
-    (format out "]")))
+(defun operand-to-string (operand &optional (size :32))
+  (check-type operand operand)
+  (check-type size operand-size)
+  (typecase operand
+    (immediate (format nil "~d" (value operand)))
+    (temp (format nil "~a ~(~a~)b" (name operand) size))
+    (register (format nil "~(~a~)" (case size
+                                     (:8 (get-register-8bit-name (name operand)))
+                                     (:32 (get-register-32bit-name (name operand)))
+                                     (:64 (name operand)))))
+    (stack (format nil "~a PTR [rsp-~d]"
+                   (case size
+                     (:8 "BYTE")
+                     (:32 "DWORD")
+                     (:64 "QWORD"))
+                   (offset operand)))))
 
 (defmethod print-object ((obj label) out)
   (with-slots (name) obj
@@ -59,12 +54,12 @@
     (format out "call ~a" name)))
 
 (defmethod print-object ((obj push-stack) out)
-  (with-slots (arg1) obj
-    (format out "push ~a" arg1)))
+  (with-slots (arg1 operand-size) obj
+    (format out "push ~a" (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj pop-stack) out)
-  (with-slots (arg1) obj
-    (format out "pop ~a" arg1)))
+  (with-slots (arg1 operand-size) obj
+    (format out "pop ~a" (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj leave) out)
   (format out "leave"))
@@ -73,12 +68,16 @@
   (format out "ret"))
 
 (defmethod print-object ((obj mov) out)
-  (with-slots (source dest) obj
-    (format out "mov ~a, ~a" dest source)))
+  (with-slots (source dest operand-size) obj
+    (format out "mov ~a, ~a"
+            (operand-to-string dest operand-size)
+            (operand-to-string source operand-size))))
 
 (defmethod print-object ((obj cmp) out)
-  (with-slots (arg1 arg2) obj
-    (format out "cmp ~a, ~a" arg2 arg1)))
+  (with-slots (arg1 arg2 operand-size) obj
+    (format out "cmp ~a, ~a"
+            (operand-to-string arg2 operand-size)
+            (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj jmp) out)
   (with-slots (target) obj
@@ -92,7 +91,7 @@
             target)))
 
 (defmethod print-object ((obj setcc) out)
-  (with-slots (arg1 set-cond) obj
+  (with-slots (arg1 set-cond operand-size) obj
     (format out "set~a ~a"
             (case set-cond
               (:equal "e")
@@ -101,19 +100,21 @@
               (:less-equal "le")
               (:greater "g")
               (:greater-less "ge"))
-            arg1)))
+            (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj cdq) out)
   (format out "cdq"))
 
 (defmethod print-object ((obj idiv) out)
-  (with-slots (arg1) obj
-    (format out "idiv ~a" arg1)))
+  (with-slots (arg1 operand-size) obj
+    (format out "idiv ~a" (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj unary) out)
-  (with-slots (opcode arg1) obj
-    (format out "~(~a~) ~a" opcode arg1)))
+  (with-slots (opcode arg1 operand-size) obj
+    (format out "~(~a~) ~a" opcode (operand-to-string arg1 operand-size))))
 
 (defmethod print-object ((obj binary) out)
-  (with-slots (opcode arg1 arg2) obj
-    (format out "~(~a~) ~a, ~a" opcode arg2 arg1)))
+  (with-slots (opcode arg1 arg2 operand-size) obj
+    (format out "~(~a~) ~a, ~a" opcode
+            (operand-to-string arg2 operand-size)
+            (operand-to-string arg1 operand-size))))
