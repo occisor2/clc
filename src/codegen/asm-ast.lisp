@@ -97,11 +97,7 @@
 (deftype operand-size () '(member :8 :32 :64))
 
 (declaim (optimize safety))
-(defclass operand ()
-  ((size
-    :initarg :size
-    :accessor size
-    :type operand-size)))
+(defclass operand () ())
 
 (declaim (optimize safety))
 (defclass immediate (operand)
@@ -121,10 +117,9 @@
     :accessor name
     :type string)))
 
-(defun make-temp (name size)
+(defun make-temp (name)
   (check-type name string)
-  (check-type size operand-size)
-  (make-instance 'temp :name name :size size))
+  (make-instance 'temp :name name))
 
 (deftype register-type () `(member ,@+register-names+))
 
@@ -135,10 +130,9 @@
     :accessor name
     :type register-type)))
 
-(defun make-register (name size)
+(defun make-register (name)
   (check-type name keyword)
-  (check-type size operand-size)
-  (make-instance 'register :name name :size size))
+  (make-instance 'register :name name))
 
 (declaim (optimize safety))
 (defclass stack (operand)
