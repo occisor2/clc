@@ -38,21 +38,25 @@
   (let ((new-instructions (make-array 1 :adjustable t :fill-pointer 0))
         (stack-space (calculate-stack asm-func)))
     ;; create stack frame
-    (vector-push-extend (make-instance 'push-stack :arg1 (make-register :rbp :64)) new-instructions)
-    (vector-push-extend (make-instance 'mov :source (make-register :rsp :64)
-                                            :dest (make-register :rbp :64))
+    (vector-push-extend (make-instance 'push-stack :arg1 (make-register :rbp)
+                                                   :size :64)
+                        new-instructions)
+    (vector-push-extend (make-instance 'mov :source (make-register :rsp)
+                                            :dest (make-register :rbp)
+                                            :size :64)
                         new-instructions)
     ;; allocate space for local variables if needed
     (unless (zerop stack-space)
       (vector-push-extend (make-instance 'binary :opcode :sub
                                                  :arg1 (make-immediate stack-space)
-                                                 :arg2 (make-register :rsp :64))
+                                                 :arg2 (make-register :rsp)
+                                                 :size :64)
                           new-instructions))
     ;; push callee saved registers used
     (loop for saved in (saves asm-func) do
       ;; The registers might not be set to 64 bit, but are required to be for push, so fix that just
       ;; in case. Don't change the size for other instructions though, just push.
-      (vector-push-extend (make-instance 'push-stack :arg1 (make-register (name saved) :64))
+      (vector-push-extend (make-instance 'push-stack :arg1 (make-register (name saved)) :size :64)
                           new-instructions))
     new-instructions))
 
@@ -113,9 +117,7 @@ aren't always valid GAS symbol names."
   (let ((new-instructions (make-array 1 :adjustable t :fill-pointer 0)))
     ;; cleanup callee saved registers
     (loop for saved in (reverse (saves asm-func)) do
-      ;; The registers might not be set to 64 bit, but are required to be for pop, so fix that just
-      ;; in case. Don't change the size for other instructions though, just pop.
-      (vector-push-extend (make-instance 'pop-stack :arg1 (make-register (name saved) :64))
+      (vector-push-extend (make-instance 'pop-stack :arg1 (make-register (name saved)) :size :64)
                           new-instructions))
     (vector-push-extend (make-instance 'leave) new-instructions)
     new-instructions))
@@ -124,9 +126,9 @@ aren't always valid GAS symbol names."
   (let ((new-instructions (make-array 1 :adjustable t :fill-pointer 0)))
     (cond ((both-operands-mem-p (source instruction) (dest instruction))
            (vector-push-extend (make-instance 'mov :source (source instruction)
-                                                   :dest (make-register :r10 :32))
+                                                   :dest (make-register :r10))
                                new-instructions)
-           (vector-push-extend (make-instance 'mov :source (make-register :r10 :32)
+           (vector-push-extend (make-instance 'mov :source (make-register :r10)
                                                    :dest (dest instruction))
                                new-instructions))
           ;; if coalesced registers, don't return any instructions
@@ -138,14 +140,14 @@ aren't always valid GAS symbol names."
   (let ((new-instructions (make-array 1 :adjustable t :fill-pointer 0)))
     (cond ((both-operands-mem-p (arg1 instruction) (arg2 instruction))
            (vector-push-extend (make-instance 'mov :source (arg1 instruction)
-                                                   :dest (make-register :r10 :32))
+                                                   :dest (make-register :r10))
                                new-instructions)
-           (vector-push-extend (make-instance 'cmp :arg1 (make-register :r10 :32)
+           (vector-push-extend (make-instance 'cmp :arg1 (make-register :r10)
                                                    :arg2 (arg2 instruction))
                                new-instructions))
           ((typep (arg2 instruction) 'immediate)
            (vector-push-extend (make-instance 'mov :source (arg2 instruction)
-                                                   :dest (make-register :r11 :32))
+                                                   :dest (make-register :r11))
                                new-instructions)
            (vector-push-extend (make-instance 'cmp :arg1 (arg1 instruction)
                                                    :arg2 :r11)
@@ -158,21 +160,21 @@ aren't always valid GAS symbol names."
     (cond ((and (eq (opcode instruction) :imul)
                 (typep (arg2 instruction) 'stack))
            (vector-push-extend (make-instance 'mov :source (arg2 instruction)
-                                                   :dest (make-register :r11 :32))
+                                                   :dest (make-register :r11))
                                new-instructions)
            (vector-push-extend (make-instance 'binary :opcode :imul
                                                       :arg1 (arg1 instruction)
-                                                      :arg2 (make-register :r11 :32))
+                                                      :arg2 (make-register :r11))
                                new-instructions)
-           (vector-push-extend (make-instance 'mov :source (make-register :r11 :32)
+           (vector-push-extend (make-instance 'mov :source (make-register :r11)
                                                    :dest (arg2 instruction))
                                new-instructions))
           ((both-operands-mem-p (arg1 instruction) (arg2 instruction))
            (vector-push-extend (make-instance 'mov :source (arg1 instruction)
-                                                   :dest (make-register :r10 :32))
+                                                   :dest (make-register :r10))
                                new-instructions)
            (vector-push-extend (make-instance 'binary :opcode (opcode instruction)
-                                                      :arg1 (make-register :r10 :32)
+                                                      :arg1 (make-register :r10)
                                                       :arg2 (arg2 instruction))
                                new-instructions))
           (t (vector-push-extend instruction new-instructions)))

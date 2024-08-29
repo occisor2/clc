@@ -141,26 +141,25 @@
     :accessor offset
     :type integer)))
 
-(defun make-stack (offset size)
+(defun make-stack (offset)
   (check-type offset integer)
-  (check-type size operand-size)
-  (make-instance 'stack :offset offset :size size))
+  (make-instance 'stack :offset offset))
 
 ;;;; Instruction types
 
 (deftype operand-size () '(member :8 :32 :64))
 
 (defclass instruction ()
-  ((operand-size
-    :initarg :operand-size
-    :accessor operand-size
+  ((size
+    :initarg :size
+    :accessor size
     :type operand-size)
    (lives
     :initform nil
     :accessor lives
     :type list
     :documentation "List of live registers at this instruction."))
-  (:default-initargs :operand-size :32))
+  (:default-initargs :size :32))
 
 (declaim (optimize safety))
 (defclass label (instruction)

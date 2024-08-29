@@ -47,7 +47,7 @@
     (loop for statement across (ir:allocs ifunc) do
       (when (typep statement 'ir:alloc)
         (setf (gethash (ir:name (ir:result statement)) offsets)
-              (make-instance 'stack :offset stack-size))
+              (make-stack stack-size))
         (incf stack-size 4)))))
 
 (defun translate-initializers (asm-func ifunc)
@@ -61,9 +61,17 @@
         (when (typep (ir:value statement) 'ir:arg)
           (let* ((arg (ir:value statement))
                  (arg-reg-name (elt +argument-registers+ (ir:arg-num arg)))
-                 (arg-reg (make-instance 'register :name arg-reg-name :size :32))
+                 (arg-reg (make-register arg-reg-name))
                  (dest-addr (gethash (ir:name (ir:addr statement)) offsets)))
             (emit-mov asm-func arg-reg dest-addr)))))))
+
+(defun make-new-temp (asm-func)
+  "Generate a new unique temporary of size SIZE."
+  (check-type asm-func asm-func)
+  (with-slots (next-temp) asm-func
+    (let ((temp (make-instance 'temp :name (format nil "r.~a" next-temp))))
+      (incf next-temp)
+      temp)))
 
 (defun emit-mov (asm-func source dest)
   "Helper function for emitting mov instructions since they are used so frequently."
@@ -82,19 +90,10 @@
     ;; Test if the second operand if a constant and assign it a temporary if so. Cmp can't have a
     ;; constant as it second operand.
     (if (typep arg2 'immediate)
-        (let ((temp (make-temp-name asm-func (size arg2))))
+        (let ((temp (make-new-temp asm-func)))
           (emit-mov asm-func arg2 temp)
           (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 temp) instructions))
         (vector-push-extend (make-instance 'cmp :arg1 arg1 :arg2 arg2) instructions))))
-
-(defun make-temp-name (asm-func size)
-  "Generate a new unique temporary of size SIZE."
-  (check-type asm-func asm-func)
-  (check-type size operand-size)
-  (with-slots (next-temp) asm-func
-    (let ((temp (make-instance 'temp :name (format nil "r.~a" next-temp) :size size)))
-      (incf next-temp)
-      temp)))
 
 (defun value-type-to-operand-type (value-type)
   "Convert an IR value type to and oeprand size."
@@ -104,10 +103,9 @@
 (defun value-to-operand (value)
   "Converts and IR `value' to an assembly `operand'."
   (check-type value ir:value)
-  (let ((operand-size (value-type-to-operand-type (ir:value-type value))))
-    (typecase value
-      (ir:constant (make-instance 'immediate :value (ir:value value) :size operand-size))
-      (ir:var (make-instance 'temp :name (ir:name value) :size operand-size)))))
+  (typecase value
+    (ir:constant (make-instance 'immediate :value (ir:value value)))
+    (ir:var (make-instance 'temp :name (ir:name value)))))
 
 (defgeneric translate-ir (statement asm-func)
   (:documentation "Translate IR statements into assembly instructions."))
@@ -123,19 +121,19 @@
           do
              (let* ((arg-value (value-to-operand arg))
                     (reg-name (elt +argument-registers+ arg-num ))
-                    (arg-reg (make-register reg-name :32)))
+                    (arg-reg (make-register reg-name)))
                (emit-mov asm-func arg-value arg-reg)))
     (vector-push-extend (make-instance 'call :name (ir:name statement)
                                              :arg-count (length (ir:args statement)))
                         instructions)
-    (emit-mov asm-func (make-register :rax :32)
+    (emit-mov asm-func (make-register :rax)
               (value-to-operand (ir:result statement)))))
 
 (defmethod translate-ir ((statement ir:ret) (asm-func asm-func))
   (with-slots (instructions) asm-func
     (when (ir:return-value statement)
       (emit-mov asm-func (value-to-operand (ir:return-value statement))
-                (make-register :rax :32)))
+                (make-register :rax)))
     (vector-push-extend (make-instance 'leave) instructions)
     (vector-push-extend (make-instance 'ret) instructions)))
 
@@ -179,8 +177,8 @@
          (emit-cmp asm-func (make-immediate 0) arg1)
          (emit-mov asm-func (make-immediate 0) result)
          (vector-push-extend (make-instance 'setcc :set-cond :equal
-                                                   ;; convert result register to 8 bit
-                                                   :arg1 (make-temp (name result) :8))
+                                                   :arg1 (make-temp (name result))
+                                                   :size :8)
                              instructions))
         (otherwise
          (emit-mov asm-func arg1 result)
@@ -203,12 +201,12 @@
           (result (value-to-operand (ir:result statement))))
       (case opcode
         (:div
-         (let ((temp (make-temp-name asm-func :32)))
+         (let ((temp (make-new-temp asm-func)))
            (emit-mov asm-func arg2 temp)
-           (emit-mov asm-func arg1 (make-register :rax :32))
+           (emit-mov asm-func arg1 (make-register :rax))
            (vector-push-extend (make-instance 'cdq) instructions)
            (vector-push-extend (make-instance 'idiv :arg1 temp) instructions)
-           (emit-mov asm-func (make-register :rax :32) result)))
+           (emit-mov asm-func (make-register :rax) result)))
         (otherwise
          (emit-mov asm-func arg1 result)
          (vector-push-extend (make-instance 'binary :opcode (ir-binary-op-to-asm opcode)

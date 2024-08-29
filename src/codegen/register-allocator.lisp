@@ -136,6 +136,10 @@
          (when (typep (arg2 instruction) 'temp)
            (setf temps (adjoin (arg2 instruction) temps :test #'operand-equal-p))
            (inc-temp-use temp-map (arg2 instruction))))
+        (setcc
+         (when (typep (arg1 instruction) 'temp)
+           (setf temps (adjoin (arg1 instruction) temps :test #'operand-equal-p))
+           (inc-temp-use temp-map (arg1 instruction))))
         (idiv
          (when (typep (arg1 instruction) 'temp)
            (setf temps (adjoin (arg1 instruction) temps :test #'operand-equal-p))
@@ -165,7 +169,7 @@
     with live-registers = nil
     for successor-id across (successors basic-block) do
       (case successor-id
-        (:exit (setf live-registers (adjoin (make-register :rax :32)
+        (:exit (setf live-registers (adjoin (make-register :rax)
                                             live-registers
                                             :test #'operand-equal-p)))
         (:entry (error "malformed control-flow graph"))
@@ -182,25 +186,27 @@
            (loop for arg-num from 0 to (1- (arg-count instruction))
                  while (< arg-num (length +argument-registers+)) ; only the first 6 registers
                  collect (let ((register-name (elt +argument-registers+ arg-num)))
-                           (make-instance 'register :name register-name :size :32)))
-           (list (make-register :rdi :32)
-                 (make-register :rsi :32)
-                 (make-register :rdx :32)
-                 (make-register :rcx :32)
-                 (make-register :r8 :32)
-                 (make-register :r9 :32)
-                 (make-register :rax :32))))
+                           (make-register register-name)))
+           (list (make-register :rdi)
+                 (make-register :rsi)
+                 (make-register :rdx)
+                 (make-register :rcx)
+                 (make-register :r8)
+                 (make-register :r9)
+                 (make-register :rax))))
     (mov (values (list (source instruction)) ; used
                  (list (dest instruction)))) ; updated
     (cmp (values (list (arg1 instruction) (arg2 instruction))
                  nil))
-    (cdq (values (list (make-register :rax :32))
-                 (list (make-register :rdx :32))))
+    (setcc (values nil
+                   (list (arg1 instruction))))
+    (cdq (values (list (make-register :rax))
+                 (list (make-register :rdx))))
     (idiv (values (list (arg1 instruction)
-                        (make-register :rax :32)
-                        (make-register :rdx :32))
-                  (list (make-register :rax :32)
-                        (make-register :rdx :32))))
+                        (make-register :rax)
+                        (make-register :rdx))
+                  (list (make-register :rax)
+                        (make-register :rdx))))
     (unary (values (list (arg1 instruction))
                    (list (arg1 instruction))))
     (binary (values (list (arg1 instruction) (arg2 instruction))
@@ -253,7 +259,7 @@
     ;; add all hard registers
     (loop for reg-name in +general-registers+ do
       (setf (gethash reg-name nodes-map)
-            (make-interf-node (make-register reg-name :32) +max-spill-cost+)))
+            (make-interf-node (make-register reg-name) +max-spill-cost+)))
     ;; have every hard register interfere with each other
     (loop for node being the hash-values of nodes-map do
       (loop for neighbor being the hash-values of nodes-map do
@@ -399,6 +405,8 @@
       (cmp
        (handle-operand-register-replace reg-map instruction 'arg1)
        (handle-operand-register-replace reg-map instruction 'arg2))
+      (setcc
+       (handle-operand-register-replace reg-map instruction 'arg1))
       (idiv
        (handle-operand-register-replace reg-map instruction 'arg1))
       (unary
@@ -419,7 +427,7 @@
   (check-type spill-map hash-table)
   (check-type temp temp)
   (setf (gethash (name temp) spill-map)
-        (make-stack (stack-size asm-func) :32))
+        (make-stack (stack-size asm-func)))
   (incf (stack-size asm-func) 4))
 
 (defun spill-addr (spill-map temp)
