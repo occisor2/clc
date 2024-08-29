@@ -60,10 +60,18 @@
         ;; If the statement is initializing space for an argument
         (when (typep (ir:value statement) 'ir:arg)
           (let* ((arg (ir:value statement))
-                 (arg-reg-name (elt +argument-registers+ (ir:arg-num arg)))
-                 (arg-reg (make-register arg-reg-name))
+                 (param-offset 24) ; parameters start 24 bytes bellow the current frame
                  (dest-addr (gethash (ir:name (ir:addr statement)) offsets)))
-            (emit-mov asm-func arg-reg dest-addr)))))))
+            (if (<= (ir:arg-num arg) 6)
+                ;; first 7 args are in registers
+                (let* ((arg-reg-name (elt +argument-registers+ (ir:arg-num arg)))
+                       (arg-reg (make-register arg-reg-name)))
+                  (emit-mov asm-func arg-reg dest-addr))
+                ;; the rest are stored in the previous stack frame; move them into variables in the
+                ;; current frame
+                (let ((param (make-param param-offset)))
+                  (emit-mov asm-func param (make-register :rd10))
+                  (emit-mov asm-func (make-register :rd10) dest-addr)))))))))
 
 (defun make-new-temp (asm-func)
   "Generate a new unique temporary of size SIZE."

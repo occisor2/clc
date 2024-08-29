@@ -145,6 +145,17 @@
   (check-type offset integer)
   (make-instance 'stack :offset offset))
 
+(declaim (optimize safety))
+(defclass param (operand)
+  ((offset
+    :initarg :offset
+    :accessor offset
+    :type integer)))
+
+(defun make-param (offset)
+  (check-type offset integer)
+  (make-instance 'param :offset offset))
+
 ;;;; Instruction types
 
 (deftype operand-size () '(member :8 :32 :64))

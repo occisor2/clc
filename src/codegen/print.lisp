@@ -20,6 +20,10 @@
                          (format out "~c~a~%" #\tab instruction)))
          instructions)))
 
+(defmethod print-object ((obj register) out)
+  (with-slots (name) obj
+    (format out "~(~a~)" name)))
+
 (defun get-register-32bit-name (name)
   "Translate a register's 64 name to its 32 bit name."
   (elt +register-names-32bit+ (position name +register-names+)))
